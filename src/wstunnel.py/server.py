@@ -1,4 +1,4 @@
-import asyncio, logging, hmac, functools, argparse
+import asyncio, logging, hmac, functools, argparse, ssl
 import websockets, websockets.server
 from base import async_copy, wrap_stream_writer
 
@@ -31,9 +31,11 @@ async def main(args):
         return await ws_handler(ws, args.backend)
     class ServerProtocol(WebSocketServerProtocol):
         __init__ = functools.partialmethod(WebSocketServerProtocol.__init__, token=args.token)
+    ssl_params = {}
     async with websockets.serve(handler, args.listen[0], args.listen[1],
                                 create_protocol=ServerProtocol,
-                                server_header=""):
+                                server_header="",
+                                **ssl_params):
         await asyncio.Future() # Serve forever
 
 if __name__ == "__main__":
@@ -50,21 +52,29 @@ if __name__ == "__main__":
     parser.add_argument("--backend", "-b", required=True,
                         metavar="tcp:IP:PORT", help="Backend address")
     parser.add_argument("--token", "-t")
+    parser.add_argument("--server-cert", "-s", metavar="server.pem",
+                        help="Server certificate with private key. This enables TLS.")
+    parser.add_argument("--client-ca", "-c", metavar="client.pem",
+                        help="Client certificate")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
+    if args.client_ca and not args.server_cert:
+        raise ValueError("Need --server-cert to enable TLS")
     if args.log_level == "debug":
-        logLevel = logging.DEBUG
+        logging.basicConfig(level=logging.DEBUG)
     elif args.log_level == "warning":
-        logLevel = logging.WARNING
+        logging.basicConfig(level=logging.WARNING)
     elif args.log_level == "error":
-        logLevel = logging.ERROR
+        logging.basicConfig(level=logging.ERROR)
     elif args.log_level == "critical":
-        logLevel = logging.CRITICAL
+        logging.basicConfig(level=logging.CRITICAL)
     else:
-        logLevel = logging.INFO
-    logging.basicConfig(level=logLevel)
+        logging.basicConfig(level=logging.INFO)
     args.listen = parse_listen(args.listen)
     args.backend = parse_backend(args.backend)
-    print(f"Listening on ws://{args.listen[0]}:{args.listen[1]}")
+    if args.server_cert:
+        print(f"Listening on wss://{args.listen[0]}:{args.listen[1]}")
+    else:
+        print(f"Listening on ws://{args.listen[0]}:{args.listen[1]}")
     asyncio.run(main(args))
 

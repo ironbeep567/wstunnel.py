@@ -26,7 +26,7 @@ async def async_copy(f_read, f_write, f_close_writer, stop_read_if_empty):
     except asyncio.CancelledError:
         raise
     except Exception as e:
-        logger.info(f"{e!r}")
+        logger.info(repr(e))
     finally:
         logger.debug(f"closing")
         if asyncio.iscoroutinefunction(f_close_writer):
