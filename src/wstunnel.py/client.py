@@ -1,4 +1,4 @@
-import asyncio, logging, argparse, ssl
+import asyncio, logging, argparse, ssl, os
 import websockets
 from base import async_copy, wrap_stream_writer
 
@@ -64,6 +64,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.CRITICAL)
     else:
         logging.basicConfig(level=logging.INFO)
+    if args.token is None:
+        args.token = os.environ.get("TOKEN", None)
     args.listen = parse_listen(args.listen)
     if args.token is not None and args.uri.startswith("ws://"):
         logger.warning("Sending token over insecure connection")

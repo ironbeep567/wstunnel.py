@@ -1,4 +1,4 @@
-import asyncio, logging, hmac, functools, argparse, ssl
+import asyncio, logging, hmac, functools, argparse, ssl, os
 import websockets, websockets.server
 from base import async_copy, wrap_stream_writer
 
@@ -80,6 +80,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.CRITICAL)
     else:
         logging.basicConfig(level=logging.INFO)
+    if args.token is None:
+        args.token = os.environ.get("TOKEN", None)
     args.listen = parse_listen(args.listen)
     args.backend = parse_backend(args.backend)
     if args.server_cert:
