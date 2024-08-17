@@ -7,7 +7,14 @@ logger = logging.getLogger(__name__)
 async def conn_handler(reader, writer, args):
     peer_addr = writer.get_extra_info("peername")
     logger.info(f"Connection {peer_addr!r} open")
-    ssl_params = {}
+    if args.uri.startswith("wss://"):
+        ssl_context = ssl.create_default_context(cafile=args.server_cert)
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        if args.client_cert:
+            ssl_context.load_cert_chain(args.client_cert)
+        ssl_params = {"ssl": ssl_context}
+    else:
+        ssl_params = {}
     async with websockets.connect(args.uri, extra_headers={"x-token":args.token},
                                   user_agent_header="", **ssl_params) as ws:
         f_write, f_close_writer = wrap_stream_writer(writer)
@@ -37,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--listen", "-l", default="tcp:127.0.0.1:8080",
                         metavar="tcp:IP:PORT", help="Listen address")
     parser.add_argument("--token", "-t")
-    parser.add_argument("--server-cert", "-s", metavar="server.pem",
+    parser.add_argument("--server-cert", "-s", metavar="server.crt",
                         help="Server certificate")
     parser.add_argument("--client-cert", "-c", metavar="client.pem",
                         help="Client certificate with private key")
@@ -45,17 +52,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.uri.startswith("wss://") and not args.uri.startswith("ws://"):
         raise ValueError(f"Not a valid websocket uri: {uri}")
+    if args.uri.startswith("ws://") and (args.server_cert or args.client_cert):
+        raise ValueError("Use a URI beginning with wss:// to enable TLS")
     if args.log_level == "debug":
-        logLevel = logging.DEBUG
+        logging.basicConfig(level=logging.DEBUG)
     elif args.log_level == "warning":
-        logLevel = logging.WARNING
+        logging.basicConfig(level=logging.WARNING)
     elif args.log_level == "error":
-        logLevel = logging.ERROR
+        logging.basicConfig(level=logging.ERROR)
     elif args.log_level == "critical":
-        logLevel = logging.CRITICAL
+        logging.basicConfig(level=logging.CRITICAL)
     else:
-        logLevel = logging.INFO
-    logging.basicConfig(level=logLevel)
+        logging.basicConfig(level=logging.INFO)
     args.listen = parse_listen(args.listen)
     if args.token is not None and args.uri.startswith("ws://"):
         logger.warning("Sending token over insecure connection")

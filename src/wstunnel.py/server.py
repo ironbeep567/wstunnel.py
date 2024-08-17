@@ -31,7 +31,17 @@ async def main(args):
         return await ws_handler(ws, args.backend)
     class ServerProtocol(WebSocketServerProtocol):
         __init__ = functools.partialmethod(WebSocketServerProtocol.__init__, token=args.token)
-    ssl_params = {}
+    if args.server_cert:
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        ssl_context.options |= ssl.OP_NO_TICKET
+        ssl_context.load_cert_chain(args.server_cert)
+        if args.client_cert:
+            ssl_context.verify_mode = ssl.CERT_REQUIRED
+            ssl_context.load_verify_locations(args.client_cert)
+        ssl_params = {"ssl": ssl_context}
+    else:
+        ssl_params = {}
     async with websockets.serve(handler, args.listen[0], args.listen[1],
                                 create_protocol=ServerProtocol,
                                 server_header="",
@@ -54,12 +64,12 @@ if __name__ == "__main__":
     parser.add_argument("--token", "-t")
     parser.add_argument("--server-cert", "-s", metavar="server.pem",
                         help="Server certificate with private key. This enables TLS.")
-    parser.add_argument("--client-ca", "-c", metavar="client.pem",
+    parser.add_argument("--client-cert", "-c", metavar="client.crt",
                         help="Client certificate")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
-    if args.client_ca and not args.server_cert:
-        raise ValueError("Need --server-cert to enable TLS")
+    if args.client_cert and not args.server_cert:
+        raise ValueError("Use --server-cert to enable TLS")
     if args.log_level == "debug":
         logging.basicConfig(level=logging.DEBUG)
     elif args.log_level == "warning":
