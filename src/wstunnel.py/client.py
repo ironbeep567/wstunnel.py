@@ -7,16 +7,17 @@ logger = logging.getLogger(__name__)
 async def conn_handler(reader, writer, args):
     peer_addr = writer.get_extra_info("peername")
     logger.info(f"Connection {peer_addr!r} open")
+    add_params = {}
     if args.uri.startswith("wss://"):
         ssl_context = ssl.create_default_context(cafile=args.server_cert)
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
         if args.client_cert:
             ssl_context.load_cert_chain(args.client_cert)
-        ssl_params = {"ssl": ssl_context}
-    else:
-        ssl_params = {}
+        add_params["ssl"] = ssl_context
+    if args.host:
+        add_params["host"] = args.host
     async with websockets.connect(args.uri, extra_headers={"x-token":args.token},
-                                  user_agent_header="", **ssl_params) as ws:
+                                  user_agent_header="", **add_params) as ws:
         f_write, f_close_writer = wrap_stream_writer(writer)
         tasks = [asyncio.create_task(async_copy(lambda: reader.read(65536), ws.send,
                                                 ws.close, True)),
@@ -48,6 +49,8 @@ if __name__ == "__main__":
                         help="Server certificate")
     parser.add_argument("--client-cert", "-c", metavar="client.pem",
                         help="Client certificate with private key")
+    parser.add_argument("--host", metavar="HOST",
+                        help="Connect to HOST instead of the one in uri")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if not args.uri.startswith("wss://") and not args.uri.startswith("ws://"):
