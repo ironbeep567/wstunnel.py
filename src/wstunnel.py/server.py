@@ -1,17 +1,22 @@
-import asyncio, logging, hmac, functools, argparse, ssl, os
+import asyncio, logging, hmac, functools, argparse, ssl, os, base64
 import websockets, websockets.server
 from base import async_copy, wrap_stream_writer
+from totp import TOTP
 
 logger = logging.getLogger(__name__)
 
 class WebSocketServerProtocol(websockets.server.WebSocketServerProtocol):
-    def __init__(self, *args, token="", **kwargs):
+    def __init__(self, *args, token="", totp_secret=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._token = token
+        self._totp = TOTP(totp_secret) if totp_secret else None
     
     async def process_request(self, path, request_headers):
-        if not hmac.compare_digest(self._token, request_headers.get("x-token", "")):
+        if self._token and not hmac.compare_digest(self._token, request_headers.get("x-token", "")):
             logger.info(f"Connection {self.remote_address!r} auth failed")
+            return 404, [], b""
+        if self._totp and not self._totp.vaildate_now(request_headers.get("x-totp", "")):
+            logger.info(f"Connection {self.remote_address!r} auth failed (TOTP)")
             return 404, [], b""
         return await super().process_request(path, request_headers)
 
@@ -30,7 +35,9 @@ async def main(args):
     async def handler(ws):
         return await ws_handler(ws, args.backend)
     class ServerProtocol(WebSocketServerProtocol):
-        __init__ = functools.partialmethod(WebSocketServerProtocol.__init__, token=args.token)
+        __init__ = functools.partialmethod(WebSocketServerProtocol.__init__,
+                                           token=args.token,
+                                           totp_secret=args.totp_secret)
     if args.server_cert:
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -66,6 +73,8 @@ if __name__ == "__main__":
                         help="Server certificate with private key. This enables TLS.")
     parser.add_argument("--client-cert", "-c", metavar="client.crt",
                         help="Client certificate")
+    parser.add_argument("--totp-secret", metavar="SECRET",
+                        help="Base32 encoded secret")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if args.client_cert and not args.server_cert:
@@ -82,6 +91,10 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     if args.token is None:
         args.token = os.environ.get("TOKEN", None)
+    if args.totp_secret is None:
+        args.totp_secret = os.environ.get("TOTP_SECRET_BASE32", None)
+    if args.totp_secret:
+        args.totp_secret = base64.b32decode(args.totp_secret)
     args.listen = parse_listen(args.listen)
     args.backend = parse_backend(args.backend)
     if args.server_cert:

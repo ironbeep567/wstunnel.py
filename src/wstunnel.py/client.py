@@ -1,10 +1,11 @@
-import asyncio, logging, argparse, ssl, os
+import asyncio, logging, argparse, ssl, os, base64
 import websockets
 from base import async_copy, wrap_stream_writer
+from totp import TOTP
 
 logger = logging.getLogger(__name__)
 
-async def conn_handler(reader, writer, args):
+async def conn_handler(reader, writer, args, totp_):
     peer_addr = writer.get_extra_info("peername")
     logger.info(f"Connection {peer_addr!r} open")
     add_params = {}
@@ -16,7 +17,12 @@ async def conn_handler(reader, writer, args):
         add_params["ssl"] = ssl_context
     if args.host:
         add_params["host"] = args.host
-    async with websockets.connect(args.uri, extra_headers={"x-token":args.token},
+    extra_headers = {}
+    if args.token:
+        extra_headers["x-token"] = args.token
+    if totp_:
+        extra_headers["x-totp"] = totp_.now()
+    async with websockets.connect(args.uri, extra_headers=extra_headers,
                                   user_agent_header="", **add_params) as ws:
         f_write, f_close_writer = wrap_stream_writer(writer)
         tasks = [asyncio.create_task(async_copy(lambda: reader.read(65536), ws.send,
@@ -27,8 +33,9 @@ async def conn_handler(reader, writer, args):
     logger.info(f"Connection {peer_addr!r} closed")
 
 async def main(args):
+    totp_ = TOTP(args.totp_secret) if args.totp_secret else None
     async def handler(reader, writer):
-        return await conn_handler(reader, writer, args)
+        return await conn_handler(reader, writer, args, totp_)
     server = await asyncio.start_server(handler, args.listen[1], args.listen[2])
     async with server:
         logger.info(f"Listening on {args.listen!r}")
@@ -51,6 +58,8 @@ if __name__ == "__main__":
                         help="Client certificate with private key")
     parser.add_argument("--host", metavar="HOST",
                         help="Connect to HOST instead of the one in uri")
+    parser.add_argument("--totp-secret", metavar="SECRET",
+                        help="Base32 encoded secret")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if not args.uri.startswith("wss://") and not args.uri.startswith("ws://"):
@@ -69,6 +78,10 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     if args.token is None:
         args.token = os.environ.get("TOKEN", None)
+    if args.totp_secret is None:
+        args.totp_secret = os.environ.get("TOTP_SECRET_BASE32", None)
+    if args.totp_secret:
+        args.totp_secret = base64.b32decode(args.totp_secret)
     args.listen = parse_listen(args.listen)
     if args.token is not None and args.uri.startswith("ws://"):
         logger.warning("Sending token over insecure connection")
