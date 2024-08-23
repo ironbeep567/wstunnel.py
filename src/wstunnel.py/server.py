@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 class WebSocketServerProtocol(websockets.server.WebSocketServerProtocol):
     def __init__(self, *args, token="", **kwargs):
         super().__init__(*args, **kwargs)
-        self.token = token
+        self._token = token
     
     async def process_request(self, path, request_headers):
-        if not hmac.compare_digest(self.token, request_headers.get("x-token", "")):
+        if not hmac.compare_digest(self._token, request_headers.get("x-token", "")):
             logger.info(f"Connection {self.remote_address!r} auth failed")
             return 404, [], b""
         return await super().process_request(path, request_headers)
