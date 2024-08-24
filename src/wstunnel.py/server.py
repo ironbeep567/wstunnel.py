@@ -68,13 +68,13 @@ if __name__ == "__main__":
                         metavar="IP:PORT", help="Listen address")
     parser.add_argument("--backend", "-b", required=True,
                         metavar="tcp:IP:PORT", help="Backend address")
-    parser.add_argument("--token", "-t")
+    parser.add_argument("--token", "-t", help="Secret token for authentication. This overrides the TOKEN env variable.")
     parser.add_argument("--server-cert", "-s", metavar="server.pem",
                         help="Server certificate with private key. This enables TLS.")
     parser.add_argument("--client-cert", "-c", metavar="client.crt",
                         help="Client certificate")
-    parser.add_argument("--totp-secret", metavar="SECRET",
-                        help="Base32 encoded secret")
+    parser.add_argument("--totp-secret",
+                        help="Base32 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE32 env variable.")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if args.client_cert and not args.server_cert:

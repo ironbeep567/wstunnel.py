@@ -51,15 +51,15 @@ if __name__ == "__main__":
                         metavar="ws[s]://HOST:PORT", help="Server URI")
     parser.add_argument("--listen", "-l", default="tcp:127.0.0.1:8080",
                         metavar="tcp:IP:PORT", help="Listen address")
-    parser.add_argument("--token", "-t")
+    parser.add_argument("--token", "-t", help="Secret token for authentication. This overrides the TOKEN env variable.")
     parser.add_argument("--server-cert", "-s", metavar="server.crt",
                         help="Server certificate")
     parser.add_argument("--client-cert", "-c", metavar="client.pem",
                         help="Client certificate with private key")
     parser.add_argument("--host", metavar="HOST",
                         help="Connect to HOST instead of the one in uri")
-    parser.add_argument("--totp-secret", metavar="SECRET",
-                        help="Base32 encoded secret")
+    parser.add_argument("--totp-secret",
+                        help="Base32 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE32 env variable.")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if not args.uri.startswith("wss://") and not args.uri.startswith("ws://"):
