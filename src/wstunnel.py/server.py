@@ -13,7 +13,7 @@ class WebSocketServerProtocol(websockets.server.WebSocketServerProtocol):
     
     async def process_request(self, path, request_headers):
         if self._token and not hmac.compare_digest(self._token, request_headers.get("x-token", "")):
-            logger.info(f"Connection {self.remote_address!r} auth failed")
+            logger.info(f"Connection {self.remote_address!r} auth failed (TOKEN)")
             return 404, [], b""
         if self._totp and not self._totp.vaildate_now(request_headers.get("x-totp", "")):
             logger.info(f"Connection {self.remote_address!r} auth failed (TOTP)")
