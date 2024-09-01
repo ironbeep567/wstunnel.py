@@ -24,14 +24,14 @@ options:
 ```
 ## Server
 ```
-usage: Wstunnel server [-h] --listen IP:PORT --backend tcp:IP:PORT [--token TOKEN] [--server-cert server.pem] [--client-cert client.crt]
-                       [--totp-secret TOTP_SECRET] [--log-level {debug,info,warning,error,critical}]
+usage: Wstunnel server [-h] --listen IP:PORT --backend /PATH:tcp:IP:PORT [/PATH:tcp:IP:PORT ...] [--token TOKEN] [--server-cert server.pem]
+                       [--client-cert client.crt] [--totp-secret TOTP_SECRET] [--log-level {debug,info,warning,error,critical}]
 
 options:
   -h, --help            show this help message and exit
   --listen IP:PORT, -l IP:PORT
                         Listen address
-  --backend tcp:IP:PORT, -b tcp:IP:PORT
+  --backend /PATH:tcp:IP:PORT [/PATH:tcp:IP:PORT ...], -b /PATH:tcp:IP:PORT [/PATH:tcp:IP:PORT ...]
                         Backend address
   --token TOKEN, -t TOKEN
                         Secret token for authentication. This overrides the TOKEN env variable.

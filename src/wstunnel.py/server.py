@@ -20,8 +20,11 @@ class WebSocketServerProtocol(websockets.server.WebSocketServerProtocol):
             return 404, [], b""
         return await super().process_request(path, request_headers)
 
-async def ws_handler(ws, backend):
+async def ws_handler(ws, backends):
     logger.info(f"Connection {ws.remote_address!r} accepted")
+    if not (backend := backends.get(ws.path, None)):
+        logger.info(f"Connection {ws.remote_address!r} closed")
+        return
     reader,writer = await asyncio.open_connection(backend[1], backend[2])
     f_write, f_close_writer = wrap_stream_writer(writer)
     tasks = [asyncio.create_task(async_copy(ws.recv, f_write,
@@ -59,15 +62,20 @@ if __name__ == "__main__":
     def parse_listen(listen):
         ip,port = listen.split(":")
         return ip,int(port)
-    def parse_backend(backend):
-        proto,rest = backend.split(":", 1)
-        ip,port = rest.rsplit(":", 1)
-        return proto,ip,int(port)
+    def parse_backends(backends):
+        d = {}
+        for backend in backends:
+            path,proto,ip,port = backend.rsplit(':', 3)
+            if not path.startswith('/'):
+                path = "/" + path
+            port = int(port)
+            d[path.lower()] = (proto,ip,port)
+        return d
     parser = argparse.ArgumentParser(prog="Wstunnel server")
     parser.add_argument("--listen", "-l", required=True,
                         metavar="IP:PORT", help="Listen address")
-    parser.add_argument("--backend", "-b", required=True,
-                        metavar="tcp:IP:PORT", help="Backend address")
+    parser.add_argument("--backend", "-b", required=True, nargs='+',
+                        metavar="/PATH:tcp:IP:PORT", help="Backend address")
     parser.add_argument("--token", "-t", help="Secret token for authentication. This overrides the TOKEN env variable.")
     parser.add_argument("--server-cert", "-s", metavar="server.pem",
                         help="Server certificate with private key. This enables TLS.")
@@ -96,7 +104,7 @@ if __name__ == "__main__":
     if args.totp_secret:
         args.totp_secret = base64.b32decode(args.totp_secret)
     args.listen = parse_listen(args.listen)
-    args.backend = parse_backend(args.backend)
+    args.backend = parse_backends(args.backend)
     if args.server_cert:
         print(f"Listening on wss://{args.listen[0]}:{args.listen[1]}")
     else:
