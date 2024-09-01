@@ -69,7 +69,7 @@ if __name__ == "__main__":
             if not path.startswith('/'):
                 path = "/" + path
             port = int(port)
-            d[path.lower()] = (proto,ip,port)
+            d[path] = (proto,ip,port)
         return d
     parser = argparse.ArgumentParser(prog="Wstunnel server")
     parser.add_argument("--listen", "-l", required=True,
