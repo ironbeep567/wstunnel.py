@@ -32,7 +32,7 @@ async def conn_handler(reader, writer, args, totp_):
         await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     logger.info(f"Connection {peer_addr!r} closed")
 
-async def main(args):
+async def start(args):
     totp_ = TOTP(args.totp_secret) if args.totp_secret else None
     async def handler(reader, writer):
         return await conn_handler(reader, writer, args, totp_)
@@ -41,7 +41,7 @@ async def main(args):
         logger.info(f"Listening on {args.listen!r}")
         await server.serve_forever()
 
-if __name__ == "__main__":
+def main():
     def parse_listen(listen):
         proto,rest = listen.split(":", 1)
         ip,port = rest.rsplit(":", 1)
@@ -86,5 +86,7 @@ if __name__ == "__main__":
     if args.token is not None and args.uri.startswith("ws://"):
         logger.warning("Sending token over insecure connection")
     print(f"Listening on {args.listen[1]}:{args.listen[2]}")
-    asyncio.run(main(args))
+    asyncio.run(start(args))
 
+if __name__ == "__main__":
+    main()

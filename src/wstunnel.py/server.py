@@ -34,7 +34,7 @@ async def ws_handler(ws, backends):
     await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
     logger.info(f"Connection {ws.remote_address!r} closed")
 
-async def main(args):
+async def start(args):
     async def handler(ws):
         return await ws_handler(ws, args.backend)
     class ServerProtocol(WebSocketServerProtocol):
@@ -58,7 +58,7 @@ async def main(args):
                                 **ssl_params):
         await asyncio.Future() # Serve forever
 
-if __name__ == "__main__":
+def main():
     def parse_listen(listen):
         ip,port = listen.split(":")
         return ip,int(port)
@@ -109,5 +109,7 @@ if __name__ == "__main__":
         print(f"Listening on wss://{args.listen[0]}:{args.listen[1]}")
     else:
         print(f"Listening on ws://{args.listen[0]}:{args.listen[1]}")
-    asyncio.run(main(args))
+    asyncio.run(start(args))
 
+if __name__ == "__main__":
+    main()
