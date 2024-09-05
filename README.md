@@ -68,3 +68,6 @@ options:
                         Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.
   --log-level {debug,info,warning,error,critical}
 ```
+## Tools
+Script for generating and signing ca/server/client certificates is available under `tools/`. You may modify it to fit your own needs before running it.
+
