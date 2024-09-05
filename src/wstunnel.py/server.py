@@ -77,7 +77,7 @@ def main():
     parser.add_argument("--client-cert", "-c", metavar="client.crt",
                         help="Client certificate")
     parser.add_argument("--totp-secret",
-                        help="Base32 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE32 env variable.")
+                        help="Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if args.client_cert and not args.server_cert:
@@ -95,9 +95,9 @@ def main():
     if args.token is None:
         args.token = os.environ.get("TOKEN", None)
     if args.totp_secret is None:
-        args.totp_secret = os.environ.get("TOTP_SECRET_BASE32", None)
+        args.totp_secret = os.environ.get("TOTP_SECRET_BASE64", None)
     if args.totp_secret:
-        args.totp_secret = base64.b32decode(args.totp_secret)
+        args.totp_secret = base64.b64decode(args.totp_secret)
     args.listen = parse_listen(args.listen)
     args.backend = parse_backends(args.backend)
     if args.server_cert:

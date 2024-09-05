@@ -19,7 +19,7 @@ options:
                         Client certificate with private key
   --host HOST           Connect to HOST instead of the one in uri
   --totp-secret TOTP_SECRET
-                        Base32 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE32 env variable.
+                        Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.
   --log-level {debug,info,warning,error,critical}
 ```
 ## Server
@@ -40,6 +40,6 @@ options:
   --client-cert client.crt, -c client.crt
                         Client certificate
   --totp-secret TOTP_SECRET
-                        Base32 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE32 env variable.
+                        Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.
   --log-level {debug,info,warning,error,critical}
 ```
