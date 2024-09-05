@@ -3,6 +3,9 @@ import websockets.exceptions
 
 logger = logging.getLogger(__name__)
 
+TOKEN_HDR = "x-token"
+TOTP_HDR = "x-totp"
+
 def wrap_stream_writer(writer):
     async def f_write(data):
         writer.write(data)

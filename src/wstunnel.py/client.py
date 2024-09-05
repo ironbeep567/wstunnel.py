@@ -1,6 +1,6 @@
 import asyncio, logging, argparse, ssl, os, base64
-import websockets
-from base import async_copy, wrap_stream_writer
+from websockets.asyncio.client import connect
+from base import async_copy, wrap_stream_writer, TOKEN_HDR, TOTP_HDR
 from totp import TOTP
 
 logger = logging.getLogger(__name__)
@@ -19,11 +19,11 @@ async def conn_handler(reader, writer, args, totp_):
         add_params["host"] = args.host
     extra_headers = {}
     if args.token:
-        extra_headers["x-token"] = args.token
+        extra_headers[TOKEN_HDR] = args.token
     if totp_:
-        extra_headers["x-totp"] = totp_.now()
-    async with websockets.connect(args.uri, extra_headers=extra_headers,
-                                  user_agent_header="", **add_params) as ws:
+        extra_headers[TOTP_HDR] = totp_.now()
+    async with connect(args.uri, additional_headers=extra_headers,
+                                 user_agent_header="", **add_params) as ws:
         f_write, f_close_writer = wrap_stream_writer(writer)
         tasks = [asyncio.create_task(async_copy(lambda: reader.read(65536), ws.send,
                                                 ws.close, True)),
