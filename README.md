@@ -1,4 +1,29 @@
-# WIP
+Tunnel your traffic through websocket.
+
+# Features
+- Multiple backends
+- mTLS
+- Shared secret authentication
+- TOTP authentication
+
+# Demo
+Create an echo server that listens to `127.0.0.1:9091`.
+```
+ncat -vkl 127.0.0.1 9091 -e /usr/bin/cat
+```
+And create a wstunnel server that listens to `127.0.0.1:9090`. Path `/a` is assigned to the echo server.
+```
+python3 server.py -l 127.0.0.1:9090 -b /a:tcp:127.0.0.1:9091 -t SECRET
+```
+To access the echo server, create a wstunnel client.
+```
+TOKEN=SECRET python3 client.py --listen tcp:127.0.0.1:8080 --uri ws://127.0.0.1:9090/a
+```
+Connect to the wstunnel client, and type anything. You should see it echoes back.
+```
+ncat 127.0.0.1 8080
+```
+
 # Usage
 ## Client
 ```
