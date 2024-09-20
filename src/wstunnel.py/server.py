@@ -18,9 +18,10 @@ def process_request(conn, req, token, totp):
     return
 
 async def ws_handler(ws, backends):
-    logger.info(f"Connection {ws.remote_address!r} accepted")
+    raddr = ws.remote_address
+    logger.info(f"Connection {raddr!r} accepted")
     if not (backend := backends.get(ws.request.path, None)):
-        logger.info(f"Connection {ws.remote_address!r} closed")
+        logger.info(f"Connection {raddr!r} closed")
         return
     reader,writer = await asyncio.open_connection(backend[1], backend[2])
     f_write, f_close_writer = wrap_stream_writer(writer)
@@ -29,7 +30,7 @@ async def ws_handler(ws, backends):
              asyncio.create_task(async_copy(lambda: reader.read(65536), ws.send,
                                             ws.close, True))]
     await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
-    logger.info(f"Connection {ws.remote_address!r} closed")
+    logger.info(f"Connection {raddr!r} closed")
 
 async def start(args):
     async def handler(ws):
