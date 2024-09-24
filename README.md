@@ -50,7 +50,8 @@ options:
 ## Server
 ```
 usage: Wstunnel server [-h] --listen IP:PORT --backend /PATH:tcp:IP:PORT [/PATH:tcp:IP:PORT ...] [--token TOKEN] [--server-cert server.pem]
-                       [--client-cert client.crt] [--totp-secret TOTP_SECRET] [--log-level {debug,info,warning,error,critical}]
+                       [--client-cert client.crt] [--totp-secret TOTP_SECRET] [--server-header SERVER_HEADER]
+                       [--log-level {debug,info,warning,error,critical}]
 
 options:
   -h, --help            show this help message and exit
@@ -66,6 +67,8 @@ options:
                         Client certificate
   --totp-secret TOTP_SECRET
                         Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.
+  --server-header SERVER_HEADER
+                        Change Server header in HTTP response.
   --log-level {debug,info,warning,error,critical}
 ```
 ## Tools

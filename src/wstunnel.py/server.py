@@ -35,6 +35,7 @@ async def ws_handler(ws, backends):
 async def start(args):
     async def handler(ws):
         return await ws_handler(ws, args.backend)
+    add_params = {}
     if args.server_cert:
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -43,15 +44,14 @@ async def start(args):
         if args.client_cert:
             ssl_context.verify_mode = ssl.CERT_REQUIRED
             ssl_context.load_verify_locations(args.client_cert)
-        ssl_params = {"ssl": ssl_context}
-    else:
-        ssl_params = {}
+        add_params["ssl"] = ssl_context
+    if args.server_header is not None:
+        add_params["server_header"] = args.server_header
     async with serve(handler, args.listen[0], args.listen[1],
                      process_request=functools.partial(process_request,
                                                        token=args.token,
                                                        totp=TOTP(args.totp_secret)),
-                     server_header="",
-                     **ssl_params):
+                     **add_params):
         await asyncio.Future() # Serve forever
 
 def main():
@@ -79,6 +79,8 @@ def main():
                         help="Client certificate")
     parser.add_argument("--totp-secret",
                         help="Base64 encoded secret for time based OTP. This overrides the TOTP_SECRET_BASE64 env variable.")
+    parser.add_argument("--server-header",
+                        help="Change Server header in HTTP response.")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error", "critical"])
     args = parser.parse_args()
     if args.client_cert and not args.server_cert:
