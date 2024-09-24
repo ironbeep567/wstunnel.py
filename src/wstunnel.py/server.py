@@ -47,10 +47,11 @@ async def start(args):
         add_params["ssl"] = ssl_context
     if args.server_header is not None:
         add_params["server_header"] = args.server_header
+    totp = TOTP(args.totp_secret) if args.totp_secret is not None else None
     async with serve(handler, args.listen[0], args.listen[1],
                      process_request=functools.partial(process_request,
                                                        token=args.token,
-                                                       totp=TOTP(args.totp_secret)),
+                                                       totp=totp),
                      **add_params):
         await asyncio.Future() # Serve forever
 
